@@ -141,5 +141,16 @@
     "stock": 10,
     "category": "hacha",
     "thumbnail": "https://m.media-amazon.com/images/I/51hbrh4-olL._AC_UF894,1000_QL80_.jpg"
+  },
+  {
+    "id": "1723416838237",
+    "title": "falchion",
+    "description": "espada de arkanea",
+    "code": "fal",
+    "price": 2000,
+    "status": true,
+    "stock": 5,
+    "category": "espada",
+    "thumbnails": []
   }
 ]
