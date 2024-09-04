@@ -1,69 +1,58 @@
 const express = require('express');
-const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
+const Product = require('../models/products');
+const router = express.Router();
 
-module.exports = function(io) {
-    const router = express.Router();
-    const productsFilePath = './data/products.json';
+module.exports = (io) => {
+    // Listar todos los productos
+    router.get('/', async (req, res) => {
+        const { sort, query } = req.query;
+        const filter = {};
 
-    const readProductsFile = () => {
-        const data = fs.readFileSync(productsFilePath);
-        return JSON.parse(data);
-    };
+        if (query) {
+            filter.$or = [
+                { category: query },
+                { status: query === 'available' ? true : false }
+            ];
+        }
 
-    const writeProductsFile = (data) => {
-        fs.writeFileSync(productsFilePath, JSON.stringify(data, null, 2));
-    };
+        let sortOption = {};
+        if (sort) {
+            sortOption = sort === 'asc' ? { price: 1 } : { price: -1 };
+        }
 
-    router.get('/', (req, res) => {
-        const products = readProductsFile();
-        const limit = req.query.limit ? parseInt(req.query.limit) : products.length;
-        res.json(products.slice(0, limit));
-    });
-
-    router.get('/:pid', (req, res) => {
-        const products = readProductsFile();
-        const product = products.find(p => p.id === req.params.pid);
-        if (product) {
-            res.json(product);
-        } else {
-            res.status(404).send('Product not found');
+        try {
+            const products = await Product.find(filter).sort(sortOption);
+            res.json({
+                status: 'success',
+                payload: products
+            });
+        } catch (error) {
+            console.error('Error fetching products:', error);
+            res.status(500).json({ status: 'error', error: error.message });
         }
     });
 
-    router.post('/', (req, res) => {
-        const products = readProductsFile();
-        const newProduct = {
-            id: uuidv4(),
-            ...req.body,
-            status: req.body.status || true
-        };
-        products.push(newProduct);
-        writeProductsFile(products);
-        io.emit('updateProducts', products); // Emitir evento a través de socket.io
-        res.status(201).json(newProduct);
-    });
-
-    router.put('/:pid', (req, res) => {
-        const products = readProductsFile();
-        const productIndex = products.findIndex(p => p.id === req.params.pid);
-        if (productIndex !== -1) {
-            const updatedProduct = { ...products[productIndex], ...req.body, id: products[productIndex].id };
-            products[productIndex] = updatedProduct;
-            writeProductsFile(products);
-            io.emit('updateProducts', products); // Emitir evento a través de socket.io
-            res.json(updatedProduct);
-        } else {
-            res.status(404).send('Product not found');
+    // Crear nuevo producto
+    router.post('/', async (req, res) => {
+        try {
+            const newProduct = new Product(req.body);
+            await newProduct.save();
+            io.emit('updateProducts', await Product.find());
+            res.status(201).json(newProduct);
+        } catch (err) {
+            res.status(500).json({ status: 'error', message: err.message });
         }
     });
 
-    router.delete('/:pid', (req, res) => {
-        let products = readProductsFile();
-        products = products.filter(p => p.id !== req.params.pid);
-        writeProductsFile(products);
-        io.emit('updateProducts', products); // Emitir evento a través de socket.io
-        res.status(204).send();
+    // Eliminar producto por ID
+    router.delete('/:pid', async (req, res) => {
+        try {
+            await Product.findByIdAndDelete(req.params.pid);
+            io.emit('updateProducts', await Product.find());
+            res.status(204).send();
+        } catch (err) {
+            res.status(500).json({ status: 'error', message: err.message });
+        }
     });
 
     return router;
