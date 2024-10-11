@@ -4,8 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{title}}</title>
+    <script src="/socket.io/socket.io.js"></script> <!-- Incluye socket.io para todas las vistas -->
 </head>
 <body>
+    <!-- Aquí se inyectará el contenido de cada vista -->
     {{{body}}}
+
+    <!-- Script global para manejar sockets (si es necesario en varias vistas) -->
+    <script>
+        const socket = io();
+
+        // Solo agregar lógica de socket común aquí si lo necesitas en todas las vistas
+    </script>
 </body>
 </html>

@@ -6,13 +6,20 @@ const path = require('path');
 const mongoose = require('mongoose');
 const productsRouter = require('./routes/products');
 const cartsRouter = require('./routes/carts');
+const Product = require('./models/products'); // Ajusta la ruta si es necesario
 
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer);
 
 // Configuración de Handlebars
-app.engine('handlebars', engine({ defaultLayout: 'main' }));
+app.engine('handlebars', engine({
+    defaultLayout: 'main',
+    runtimeOptions: {
+        allowProtoPropertiesByDefault: true,  // Permite el acceso a propiedades heredadas
+        allowProtoMethodsByDefault: true      // Permite el acceso a métodos heredados
+    }
+}));
 app.set('view engine', 'handlebars');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -20,8 +27,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Conexión a MongoDB
-mongoose.connect('mongodb://127.0.0.1:27017/coder_back', {
+mongoose.connect('mongodb+srv://joaqueen:BsVTPUhl4rmjutWF@cluster0.uehidpe.mongodb.net/coder_back?retryWrites=true&w=majority', {
     useNewUrlParser: true, // Opcional pero recomendado
     useUnifiedTopology: true, // Opcional pero recomendado
     family: 4 // Esto asegura que Mongoose use IPv4
