@@ -4,9 +4,15 @@ const { Server } = require('socket.io');
 const { engine } = require('express-handlebars');
 const path = require('path');
 const mongoose = require('mongoose');
+const passport = require('./config/passport'); // Configuración de Passport para JWT
+const cookieParser = require('cookie-parser'); // Para manejar cookies
+require('dotenv').config(); // Para manejar variables de entorno
+
+// Importar rutas y modelos
 const productsRouter = require('./routes/products');
 const cartsRouter = require('./routes/carts');
-const Product = require('./models/products'); // Ajusta la ruta si es necesario
+const sessionsRouter = require('./routes/sessions'); // Rutas para autenticación de usuarios
+const Product = require('./models/products'); // Modelo de productos
 
 const app = express();
 const httpServer = createServer(app);
@@ -16,8 +22,8 @@ const io = new Server(httpServer);
 app.engine('handlebars', engine({
     defaultLayout: 'main',
     runtimeOptions: {
-        allowProtoPropertiesByDefault: true,  // Permite el acceso a propiedades heredadas
-        allowProtoMethodsByDefault: true      // Permite el acceso a métodos heredados
+        allowProtoPropertiesByDefault: true,
+        allowProtoMethodsByDefault: true
     }
 }));
 app.set('view engine', 'handlebars');
@@ -26,11 +32,14 @@ app.set('views', path.join(__dirname, 'views'));
 // Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(cookieParser()); // Middleware para manejar cookies
+app.use(passport.initialize()); // Inicializa Passport
 
-mongoose.connect('mongodb+srv://joaqueen:BsVTPUhl4rmjutWF@cluster0.uehidpe.mongodb.net/coder_back?retryWrites=true&w=majority', {
-    useNewUrlParser: true, // Opcional pero recomendado
-    useUnifiedTopology: true, // Opcional pero recomendado
-    family: 4 // Esto asegura que Mongoose use IPv4
+// Conectar a MongoDB
+mongoose.connect(process.env.MONGO_URI || 'mongodb+srv://joaqueen:BsVTPUhl4rmjutWF@cluster0.uehidpe.mongodb.net/coder_back?retryWrites=true&w=majority', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    family: 4
 })
 .then(() => console.log('MongoDB Connected'))
 .catch((err) => console.error('Error connecting to MongoDB', err));
@@ -38,6 +47,7 @@ mongoose.connect('mongodb+srv://joaqueen:BsVTPUhl4rmjutWF@cluster0.uehidpe.mongo
 // Rutas de API
 app.use('/api/products', productsRouter(io)); // Pasamos io al router
 app.use('/api/carts', cartsRouter);
+app.use('/api/sessions', sessionsRouter); // Rutas para autenticación
 
 // Rutas para las vistas
 app.get('/', async (req, res) => {
@@ -57,6 +67,15 @@ app.get('/realtimeproducts', async (req, res) => {
         res.status(500).send('Error al cargar productos');
     }
 });
+
+
+
+
+// Ruta para obtener el usuario autenticado actual
+app.get('/api/sessions/current', passport.authenticate('jwt', { session: false }), (req, res) => {
+    res.json(req.user); // Devolver los datos del usuario autenticado
+});
+
 
 // Configuración de Socket.IO
 io.on('connection', (socket) => {
@@ -85,7 +104,7 @@ io.on('connection', (socket) => {
 });
 
 // Iniciar el servidor
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 httpServer.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
