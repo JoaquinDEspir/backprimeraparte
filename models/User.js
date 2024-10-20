@@ -7,15 +7,18 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     age: { type: Number, required: true },
     password: { type: String, required: true },
+    cart: { type: mongoose.Schema.Types.ObjectId, ref: 'Cart' },
     role: { type: String, default: 'user' }
 });
 
-// Middleware para encriptar la contraseña antes de guardar el usuario
-userSchema.pre('save', function(next) {
+// Método para encriptar la contraseña antes de guardar el usuario
+userSchema.pre('save', function (next) {
     if (!this.isModified('password')) return next();
-    this.password = bcrypt.hashSync(this.password, 10);
+    const salt = bcrypt.genSaltSync(10);
+    this.password = bcrypt.hashSync(this.password, salt);
     next();
 });
 
 const User = mongoose.model('User', userSchema);
+
 module.exports = User;
