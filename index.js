@@ -1,18 +1,19 @@
+// index.js
 const express = require('express');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const { engine } = require('express-handlebars');
 const path = require('path');
 const mongoose = require('mongoose');
-const passport = require('./config/passport'); // Configuración de Passport para JWT
-const cookieParser = require('cookie-parser'); // Para manejar cookies
-require('dotenv').config(); // Para manejar variables de entorno
+const passport = require('./config/passport');
+const cookieParser = require('cookie-parser');
+require('dotenv').config();
 
 // Importar rutas y modelos
 const productsRouter = require('./routes/products');
 const cartsRouter = require('./routes/carts');
-const sessionsRouter = require('./routes/sessions'); // Rutas para autenticación de usuarios
-const Product = require('./models/products'); // Modelo de productos
+const sessionsRouter = require('./routes/sessions');
+const Product = require('./models/products'); // Importa el modelo Product
 
 const app = express();
 const httpServer = createServer(app);
@@ -32,11 +33,11 @@ app.set('views', path.join(__dirname, 'views'));
 // Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(cookieParser()); // Middleware para manejar cookies
-app.use(passport.initialize()); // Inicializa Passport
+app.use(cookieParser());
+app.use(passport.initialize());
 
 // Conectar a MongoDB
-mongoose.connect(process.env.MONGO_URI || 'mongodb+srv://joaqueen:BsVTPUhl4rmjutWF@cluster0.uehidpe.mongodb.net/coder_back?retryWrites=true&w=majority', {
+mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     family: 4
@@ -45,9 +46,9 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb+srv://joaqueen:BsVTPUhl4rmjut
 .catch((err) => console.error('Error connecting to MongoDB', err));
 
 // Rutas de API
-app.use('/api/products', productsRouter(io)); // Pasamos io al router
+app.use('/api/products', productsRouter(io));
 app.use('/api/carts', cartsRouter);
-app.use('/api/sessions', sessionsRouter); // Rutas para autenticación
+app.use('/api/sessions', sessionsRouter); // Ruta para autenticación de usuarios
 
 // Rutas para las vistas
 app.get('/', async (req, res) => {
@@ -68,38 +69,19 @@ app.get('/realtimeproducts', async (req, res) => {
     }
 });
 
-
-
-
-// Ruta para obtener el usuario autenticado actual
-app.get('/api/sessions/current', passport.authenticate('jwt', { session: false }), (req, res) => {
-    res.json(req.user); // Devolver los datos del usuario autenticado
-});
-
-
 // Configuración de Socket.IO
 io.on('connection', (socket) => {
-    console.log('New client connected');
-
     socket.on('newProduct', async (productData) => {
-        try {
-            const newProduct = new Product(productData);
-            await newProduct.save();
-            const products = await Product.find();
-            io.emit('updateProducts', products);
-        } catch (err) {
-            console.error('Error al guardar nuevo producto', err);
-        }
+        const newProduct = new Product(productData);
+        await newProduct.save();
+        const products = await Product.find();
+        io.emit('updateProducts', products);
     });
 
     socket.on('deleteProduct', async (productId) => {
-        try {
-            await Product.findByIdAndDelete(productId);
-            const products = await Product.find();
-            io.emit('updateProducts', products);
-        } catch (err) {
-            console.error('Error al eliminar producto', err);
-        }
+        await Product.findByIdAndDelete(productId);
+        const products = await Product.find();
+        io.emit('updateProducts', products);
     });
 });
 
