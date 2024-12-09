@@ -15,7 +15,7 @@ class UserDAO {
         return await user.save();
     }
 
-    
+     
 }
 
 module.exports = new UserDAO();

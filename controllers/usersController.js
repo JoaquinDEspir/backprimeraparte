@@ -1,5 +1,5 @@
 // controllers/sessionsController.js
-const userDAO = require('../daos/userDAO'); // Asegúrate de que esta línea esté presente
+// Asegúrate de que esta línea esté presente
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const emailService = require('../services/emailService');
