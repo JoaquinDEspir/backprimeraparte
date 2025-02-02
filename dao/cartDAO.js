@@ -1,4 +1,3 @@
-// dao/cartDAO.js
 const Cart = require('../models/carts');
 
 class CartDAO {
@@ -12,6 +11,19 @@ class CartDAO {
 
     async save(cart) {
         return await cart.save();
+    }
+
+    async deleteCart(cartId) {
+        return await Cart.findByIdAndDelete(cartId);
+    }
+    async save(cartData) {
+        // Crear una nueva instancia si no es ya un documento de Mongoose
+        const cart = cartData instanceof Cart ? cartData : new Cart(cartData);
+        return await cart.save();
+    }
+
+    async getAllCarts() {
+        return await Cart.find();
     }
 }
 

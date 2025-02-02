@@ -1,5 +1,4 @@
-// repositories/productRepository.js
-
+const productDAO = require('../dao/productDAO');
 
 class ProductRepository {
     async getProductById(productId) {
@@ -20,6 +19,14 @@ class ProductRepository {
 
     async deleteProduct(productId) {
         return await productDAO.delete(productId);
+    }
+
+    async deleteProductById(productId) {
+        return await productDAO.deleteProductById(productId);
+    }
+
+    async createProduct(productData) {
+        return await productDAO.create(productData);  // Nuevo método para creación
     }
 }
 

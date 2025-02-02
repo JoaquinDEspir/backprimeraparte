@@ -4,7 +4,7 @@ const User = require('../models/User');
 
 const opts = {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-    secretOrKey: 'your_jwt_secret',  // Asegúrate de usar el mismo secreto que en el archivo de sesiones
+    secretOrKey: process.env.JWT_SECRET || 'your_jwt_secret',  // Secreto para el JWT
 };
 
 passport.use(
@@ -14,9 +14,11 @@ passport.use(
             if (user) {
                 return done(null, user);
             } else {
+                console.error('User not found in JWT strategy');
                 return done(null, false);
             }
         } catch (err) {
+            console.error('Error in JWT strategy:', err);
             return done(err, false);
         }
     })

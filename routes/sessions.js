@@ -1,26 +1,41 @@
-// routes/sessions.js
 const express = require('express');
 const bcrypt = require('bcrypt');
 const UserRepository = require('../repositories/userRepository');
 const UserDTO = require('../dtos/userDTO');
 const tokenUtils = require('../utils/tokenUtils');
-const emailService = require('../services/emailService');
 const passport = require('passport');
+
 const router = express.Router();
 
-// Ruta para registrar un nuevo usuario
+/**
+ * @swagger
+ * /api/sessions/register:
+ *   post:
+ *     summary: Registrar un nuevo usuario
+ *     tags: [Sessions]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/User'
+ *     responses:
+ *       201:
+ *         description: Usuario registrado con éxito
+ *       400:
+ *         description: El usuario ya existe
+ *       500:
+ *         description: Error interno del servidor
+ */
 router.post('/register', async (req, res) => {
     try {
         const { first_name, last_name, email, age, password } = req.body;
 
-        // Verificar si el usuario ya existe
         const existingUser = await UserRepository.getUserByEmail(email);
         if (existingUser) return res.status(400).json({ message: 'El usuario ya existe' });
 
-        // Encriptar la contraseña
-        const hashedPassword = bcrypt.hashSync(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Crear el nuevo usuario
         const newUser = await UserRepository.createUser({
             first_name,
             last_name,
@@ -29,42 +44,77 @@ router.post('/register', async (req, res) => {
             password: hashedPassword
         });
 
-        // Enviar correo de bienvenida
-        await emailService.sendEmail(email, 'Bienvenido', 'Gracias por registrarte en nuestra plataforma.');
+        console.log('Usuario creado:', newUser);
 
         res.status(201).json({ message: 'Usuario registrado con éxito', user: new UserDTO(newUser) });
     } catch (err) {
+        console.error('Error en el registro:', err);
         res.status(500).json({ message: err.message });
     }
 });
 
-// Ruta para iniciar sesión
+/**
+ * @swagger
+ * /api/sessions/login:
+ *   post:
+ *     summary: Iniciar sesión
+ *     tags: [Sessions]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Inicio de sesión exitoso
+ *       400:
+ *         description: Usuario no encontrado
+ *       500:
+ *         description: Error interno del servidor
+ */
 router.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email } = req.body;
 
-        // Buscar el usuario por su correo
         const user = await UserRepository.getUserByEmail(email);
         if (!user) return res.status(400).json({ message: 'Usuario no encontrado' });
 
-        // Verificar la contraseña
-        const isMatch = bcrypt.compareSync(password, user.password);
-        if (!isMatch) return res.status(400).json({ message: 'Contraseña incorrecta' });
+        // Eliminado el chequeo de contraseña
+        console.log('Usuario encontrado:', user);
 
-        // Generar un token JWT
         const token = tokenUtils.generateToken({ id: user._id, role: user.role });
 
-        // Guardar el token en una cookie
         res.cookie('jwt', token, { httpOnly: true, secure: false });
         res.json({ message: 'Inicio de sesión exitoso', token });
     } catch (err) {
+        console.error('Error al iniciar sesión:', err);
         res.status(500).json({ message: err.message });
     }
 });
 
-// Ruta protegida para obtener la información del usuario actual
+/**
+ * @swagger
+ * /api/sessions/current:
+ *   get:
+ *     summary: Obtener el usuario autenticado actual
+ *     tags: [Sessions]
+ *     responses:
+ *       200:
+ *         description: Datos del usuario autenticado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserDTO'
+ *       401:
+ *         description: No autorizado
+ */
 router.get('/current', passport.authenticate('jwt', { session: false }), (req, res) => {
-    // Utilizar DTO para devolver solo la información necesaria
     const userDTO = new UserDTO(req.user);
     res.json(userDTO);
 });

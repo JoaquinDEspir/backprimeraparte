@@ -1,5 +1,4 @@
-// repositories/cartRepository.js
-
+const cartDAO = require('../dao/cartDAO');
 
 class CartRepository {
     async getCartById(cartId) {
@@ -12,6 +11,17 @@ class CartRepository {
 
     async save(cart) {
         return await cartDAO.save(cart);
+    }
+
+    async deleteCart(cartId) {
+        return await cartDAO.deleteCart(cartId);
+    }
+    async save(cartData) {
+        return await cartDAO.save(cartData);
+    }
+
+    async getAllCarts() {
+        return await cartDAO.getAllCarts();
     }
 }
 

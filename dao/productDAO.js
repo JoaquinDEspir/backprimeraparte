@@ -1,4 +1,3 @@
-// dao/productDAO.js
 const Product = require('../models/products');
 
 class ProductDAO {
@@ -20,6 +19,14 @@ class ProductDAO {
 
     async delete(productId) {
         return await Product.findByIdAndDelete(productId);
+    }
+
+    async deleteProductById(productId) {
+        return await Product.findByIdAndDelete(productId);
+    }
+
+    async create(productData) {
+        return await Product.create(productData);  // Nuevo método de creación
     }
 }
 
